@@ -1,10 +1,10 @@
 library flutter_radar_chart;
 
-import 'dart:ui';
 import 'dart:math' as math;
+import 'dart:math' show pi, cos, sin;
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'dart:math' show pi, cos, sin;
 
 const defaultGraphColors = [
   Colors.green,
@@ -23,61 +23,29 @@ class RadarChart extends StatefulWidget {
   final Color outlineColor;
   final Color axisColor;
   final List<Color> graphColors;
-  final int sides;
+  final bool hasCircularBorder;
+  final bool fillPolygons;
 
   const RadarChart({
     Key key,
     @required this.ticks,
     @required this.features,
     @required this.data,
-    this.reverseAxis = false,
+    this.reverseAxis = true,
+    this.hasCircularBorder = true,
+    this.fillPolygons = true,
     this.ticksTextStyle = const TextStyle(color: Colors.grey, fontSize: 12),
     this.featuresTextStyle = const TextStyle(color: Colors.black, fontSize: 16),
     this.outlineColor = Colors.black,
     this.axisColor = Colors.grey,
     this.graphColors = defaultGraphColors,
-    this.sides = 0,
   }) : super(key: key);
-
-  factory RadarChart.light({
-    @required List<int> ticks,
-    @required List<String> features,
-    @required List<List<int>> data,
-    bool reverseAxis = false,
-    bool useSides = false,
-  }) {
-    return RadarChart(
-        ticks: ticks,
-        features: features,
-        data: data,
-        reverseAxis: reverseAxis,
-        sides: useSides ? features.length : 0);
-  }
-
-  factory RadarChart.dark({
-    @required List<int> ticks,
-    @required List<String> features,
-    @required List<List<int>> data,
-    bool reverseAxis = false,
-    bool useSides = false,
-  }) {
-    return RadarChart(
-        ticks: ticks,
-        features: features,
-        data: data,
-        featuresTextStyle: const TextStyle(color: Colors.white, fontSize: 16),
-        outlineColor: Colors.white,
-        axisColor: Colors.grey,
-        reverseAxis: reverseAxis,
-        sides: useSides ? features.length : 0);
-  }
 
   @override
   _RadarChartState createState() => _RadarChartState();
 }
 
-class _RadarChartState extends State<RadarChart>
-    with SingleTickerProviderStateMixin {
+class _RadarChartState extends State<RadarChart> with SingleTickerProviderStateMixin {
   double fraction = 0;
   Animation<double> animation;
   AnimationController animationController;
@@ -85,8 +53,7 @@ class _RadarChartState extends State<RadarChart>
   @override
   void initState() {
     super.initState();
-    animationController = AnimationController(
-        duration: Duration(milliseconds: 1000), vsync: this);
+    animationController = AnimationController(duration: Duration(milliseconds: 1000), vsync: this);
 
     animation = Tween(begin: 0.0, end: 1.0).animate(CurvedAnimation(
       curve: Curves.fastOutSlowIn,
@@ -123,7 +90,8 @@ class _RadarChartState extends State<RadarChart>
           widget.outlineColor,
           widget.axisColor,
           widget.graphColors,
-          widget.sides,
+          widget.hasCircularBorder,
+          widget.fillPolygons,
           this.fraction),
     );
   }
@@ -145,7 +113,8 @@ class RadarChartPainter extends CustomPainter {
   final Color outlineColor;
   final Color axisColor;
   final List<Color> graphColors;
-  final int sides;
+  final bool hasCircularBorder;
+  final bool fillPolygons;
   final double fraction;
 
   RadarChartPainter(
@@ -158,24 +127,25 @@ class RadarChartPainter extends CustomPainter {
     this.outlineColor,
     this.axisColor,
     this.graphColors,
-    this.sides,
+    this.hasCircularBorder,
+    this.fillPolygons,
     this.fraction,
   );
 
-  Path variablePath(Size size, double radius, int sides) {
+  Path variablePath(Size size, double radius) {
     var path = Path();
-    var angle = (math.pi * 2) / sides;
 
-    Offset center = Offset(size.width / 2, size.height / 2);
-
-    if (sides < 3) {
-      // Draw a circle
+    if (hasCircularBorder) {
       path.addOval(Rect.fromCircle(
         center: Offset(size.width / 2, size.height / 2),
         radius: radius,
       ));
+      return path;
     } else {
       // Draw a polygon
+      final sides = features.length;
+      var angle = (math.pi * 2) / sides;
+      Offset center = Offset(size.width / 2, size.height / 2);
       Offset startPoint = Offset(radius * cos(-pi / 2), radius * sin(-pi / 2));
 
       path.moveTo(startPoint.dx + center.dx, startPoint.dy + center.dy);
@@ -211,7 +181,7 @@ class RadarChartPainter extends CustomPainter {
       ..strokeWidth = 1.0
       ..isAntiAlias = true;
 
-    canvas.drawPath(variablePath(size, radius, this.sides), outlinePaint);
+    canvas.drawPath(variablePath(size, radius), outlinePaint);
     // Painting the circles and labels for the given ticks (could be auto-generated)
     // The last tick is ignored, since it overlaps with the feature label
     var tickDistance = radius / (ticks.length);
@@ -227,21 +197,19 @@ class RadarChartPainter extends CustomPainter {
     }
 
     tickLabels
-        .sublist(
-            reverseAxis ? 1 : 0, reverseAxis ? ticks.length : ticks.length - 1)
+        .sublist(reverseAxis ? 1 : 0, reverseAxis ? ticks.length : ticks.length - 1)
         .asMap()
         .forEach((index, tick) {
       var tickRadius = tickDistance * (index + 1);
 
-      canvas.drawPath(variablePath(size, tickRadius, this.sides), ticksPaint);
+      canvas.drawPath(variablePath(size, tickRadius), ticksPaint);
 
       TextPainter(
         text: TextSpan(text: tick.toString(), style: ticksTextStyle),
         textDirection: TextDirection.ltr,
       )
         ..layout(minWidth: 0, maxWidth: size.width)
-        ..paint(canvas,
-            Offset(centerX, centerY - tickRadius - ticksTextStyle.fontSize));
+        ..paint(canvas, Offset(centerX, centerY - tickRadius - ticksTextStyle.fontSize));
     });
 
     // Painting the axis for each given feature
@@ -251,16 +219,14 @@ class RadarChartPainter extends CustomPainter {
       var xAngle = cos(angle * index - pi / 2);
       var yAngle = sin(angle * index - pi / 2);
 
-      var featureOffset =
-          Offset(centerX + radius * xAngle, centerY + radius * yAngle);
+      var featureOffset = Offset(centerX + radius * xAngle, centerY + radius * yAngle);
 
       canvas.drawLine(centerOffset, featureOffset, ticksPaint);
 
       var featureLabelFontHeight = featuresTextStyle.fontSize;
       var featureLabelFontWidth = featuresTextStyle.fontSize - 5;
       var labelYOffset = yAngle < 0 ? -featureLabelFontHeight : 0;
-      var labelXOffset =
-          xAngle < 0 ? -featureLabelFontWidth * feature.length : 0;
+      var labelXOffset = xAngle < 0 ? -featureLabelFontWidth * feature.length : 0;
 
       TextPainter(
         text: TextSpan(text: feature, style: featuresTextStyle),
@@ -268,10 +234,7 @@ class RadarChartPainter extends CustomPainter {
         textDirection: TextDirection.ltr,
       )
         ..layout(minWidth: 0, maxWidth: size.width)
-        ..paint(
-            canvas,
-            Offset(featureOffset.dx + labelXOffset,
-                featureOffset.dy + labelYOffset));
+        ..paint(canvas, Offset(featureOffset.dx + labelXOffset, featureOffset.dy + labelYOffset));
     });
 
     // Painting each graph
@@ -307,13 +270,12 @@ class RadarChartPainter extends CustomPainter {
           path.lineTo(centerX + (radius * fraction - scaledPoint) * xAngle,
               centerY + (radius * fraction - scaledPoint) * yAngle);
         } else {
-          path.lineTo(
-              centerX + scaledPoint * xAngle, centerY + scaledPoint * yAngle);
+          path.lineTo(centerX + scaledPoint * xAngle, centerY + scaledPoint * yAngle);
         }
       });
 
       path.close();
-      canvas.drawPath(path, graphPaint);
+      if (fillPolygons) canvas.drawPath(path, graphPaint);
       canvas.drawPath(path, graphOutlinePaint);
     });
   }
