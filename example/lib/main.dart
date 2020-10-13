@@ -130,6 +130,7 @@ class _MyHomePageState extends State<MyHomePage> {
               features: features,
               data: data,
               hasCircularBorder: hasCircularBorder,
+              outlineColor: Colors.grey,
               fillPolygons: fillPolygons,
             ),
           ),

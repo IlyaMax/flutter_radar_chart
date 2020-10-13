@@ -25,13 +25,14 @@ class RadarChart extends StatefulWidget {
   final List<Color> graphColors;
   final bool hasCircularBorder;
   final bool fillPolygons;
+  final double dotRadius;
 
   const RadarChart({
     Key key,
     @required this.ticks,
     @required this.features,
     @required this.data,
-    this.reverseAxis = true,
+    this.reverseAxis = false,
     this.hasCircularBorder = true,
     this.fillPolygons = true,
     this.ticksTextStyle = const TextStyle(color: Colors.grey, fontSize: 12),
@@ -39,6 +40,7 @@ class RadarChart extends StatefulWidget {
     this.outlineColor = Colors.black,
     this.axisColor = Colors.grey,
     this.graphColors = defaultGraphColors,
+    this.dotRadius = 5.0,
   }) : super(key: key);
 
   @override
@@ -80,19 +82,7 @@ class _RadarChartState extends State<RadarChart> with SingleTickerProviderStateM
   Widget build(BuildContext context) {
     return CustomPaint(
       size: Size(double.infinity, double.infinity),
-      painter: RadarChartPainter(
-          widget.ticks,
-          widget.features,
-          widget.data,
-          widget.reverseAxis,
-          widget.ticksTextStyle,
-          widget.featuresTextStyle,
-          widget.outlineColor,
-          widget.axisColor,
-          widget.graphColors,
-          widget.hasCircularBorder,
-          widget.fillPolygons,
-          this.fraction),
+      painter: RadarChartPainter(widget, this.fraction),
     );
   }
 
@@ -104,38 +94,15 @@ class _RadarChartState extends State<RadarChart> with SingleTickerProviderStateM
 }
 
 class RadarChartPainter extends CustomPainter {
-  final List<int> ticks;
-  final List<String> features;
-  final List<List<int>> data;
-  final bool reverseAxis;
-  final TextStyle ticksTextStyle;
-  final TextStyle featuresTextStyle;
-  final Color outlineColor;
-  final Color axisColor;
-  final List<Color> graphColors;
-  final bool hasCircularBorder;
-  final bool fillPolygons;
+  final RadarChart chart;
   final double fraction;
 
-  RadarChartPainter(
-    this.ticks,
-    this.features,
-    this.data,
-    this.reverseAxis,
-    this.ticksTextStyle,
-    this.featuresTextStyle,
-    this.outlineColor,
-    this.axisColor,
-    this.graphColors,
-    this.hasCircularBorder,
-    this.fillPolygons,
-    this.fraction,
-  );
+  RadarChartPainter(this.chart, this.fraction);
 
   Path variablePath(Size size, double radius) {
     var path = Path();
 
-    if (hasCircularBorder) {
+    if (chart.hasCircularBorder) {
       path.addOval(Rect.fromCircle(
         center: Offset(size.width / 2, size.height / 2),
         radius: radius,
@@ -143,7 +110,7 @@ class RadarChartPainter extends CustomPainter {
       return path;
     } else {
       // Draw a polygon
-      final sides = features.length;
+      final sides = chart.features.length;
       var angle = (math.pi * 2) / sides;
       Offset center = Offset(size.width / 2, size.height / 2);
       Offset startPoint = Offset(radius * cos(-pi / 2), radius * sin(-pi / 2));
@@ -166,17 +133,17 @@ class RadarChartPainter extends CustomPainter {
     final centerY = size.height / 2.0;
     final centerOffset = Offset(centerX, centerY);
     final radius = math.min(centerX, centerY) * 0.8;
-    final scale = radius / ticks.last;
+    final scale = radius / chart.ticks.last;
 
     // Painting the chart outline
     var outlinePaint = Paint()
-      ..color = outlineColor
+      ..color = chart.outlineColor
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2.0
       ..isAntiAlias = true;
 
     var ticksPaint = Paint()
-      ..color = axisColor
+      ..color = chart.axisColor
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.0
       ..isAntiAlias = true;
@@ -184,20 +151,20 @@ class RadarChartPainter extends CustomPainter {
     canvas.drawPath(variablePath(size, radius), outlinePaint);
     // Painting the circles and labels for the given ticks (could be auto-generated)
     // The last tick is ignored, since it overlaps with the feature label
-    var tickDistance = radius / (ticks.length);
-    var tickLabels = reverseAxis ? ticks.reversed.toList() : ticks;
+    var tickDistance = radius / (chart.ticks.length);
+    var tickLabels = chart.reverseAxis ? chart.ticks.reversed.toList() : chart.ticks;
 
-    if (reverseAxis) {
+    if (chart.reverseAxis) {
       TextPainter(
-        text: TextSpan(text: tickLabels[0].toString(), style: ticksTextStyle),
+        text: TextSpan(text: tickLabels[0].toString(), style: chart.ticksTextStyle),
         textDirection: TextDirection.ltr,
       )
         ..layout(minWidth: 0, maxWidth: size.width)
-        ..paint(canvas, Offset(centerX, centerY - ticksTextStyle.fontSize));
+        ..paint(canvas, Offset(centerX, centerY - chart.ticksTextStyle.fontSize));
     }
 
     tickLabels
-        .sublist(reverseAxis ? 1 : 0, reverseAxis ? ticks.length : ticks.length - 1)
+        .sublist(chart.reverseAxis ? 1 : 0, chart.reverseAxis ? chart.ticks.length : chart.ticks.length - 1)
         .asMap()
         .forEach((index, tick) {
       var tickRadius = tickDistance * (index + 1);
@@ -205,17 +172,17 @@ class RadarChartPainter extends CustomPainter {
       canvas.drawPath(variablePath(size, tickRadius), ticksPaint);
 
       TextPainter(
-        text: TextSpan(text: tick.toString(), style: ticksTextStyle),
+        text: TextSpan(text: tick.toString(), style: chart.ticksTextStyle),
         textDirection: TextDirection.ltr,
       )
         ..layout(minWidth: 0, maxWidth: size.width)
-        ..paint(canvas, Offset(centerX, centerY - tickRadius - ticksTextStyle.fontSize));
+        ..paint(canvas, Offset(centerX, centerY - tickRadius - chart.ticksTextStyle.fontSize));
     });
 
     // Painting the axis for each given feature
-    var angle = (2 * pi) / features.length;
+    var angle = (2 * pi) / chart.features.length;
 
-    features.asMap().forEach((index, feature) {
+    chart.features.asMap().forEach((index, feature) {
       var xAngle = cos(angle * index - pi / 2);
       var yAngle = sin(angle * index - pi / 2);
 
@@ -223,13 +190,13 @@ class RadarChartPainter extends CustomPainter {
 
       canvas.drawLine(centerOffset, featureOffset, ticksPaint);
 
-      var featureLabelFontHeight = featuresTextStyle.fontSize;
-      var featureLabelFontWidth = featuresTextStyle.fontSize - 5;
+      var featureLabelFontHeight = chart.featuresTextStyle.fontSize;
+      var featureLabelFontWidth = chart.featuresTextStyle.fontSize - 5;
       var labelYOffset = yAngle < 0 ? -featureLabelFontHeight : 0;
       var labelXOffset = xAngle < 0 ? -featureLabelFontWidth * feature.length : 0;
 
       TextPainter(
-        text: TextSpan(text: feature, style: featuresTextStyle),
+        text: TextSpan(text: feature, style: chart.featuresTextStyle),
         textAlign: TextAlign.left,
         textDirection: TextDirection.ltr,
       )
@@ -238,27 +205,31 @@ class RadarChartPainter extends CustomPainter {
     });
 
     // Painting each graph
-    data.asMap().forEach((index, graph) {
-      var graphPaint = Paint()
-        ..color = graphColors[index % graphColors.length].withOpacity(0.3)
+    chart.data.asMap().forEach((index, graph) {
+      final graphPaint = Paint()
+        ..color = chart.graphColors[index % chart.graphColors.length].withOpacity(0.3)
         ..style = PaintingStyle.fill;
 
-      var graphOutlinePaint = Paint()
-        ..color = graphColors[index % graphColors.length]
+      final graphOutlinePaint = Paint()
+        ..color = chart.graphColors[index % chart.graphColors.length]
         ..style = PaintingStyle.stroke
         ..strokeWidth = 2.0
         ..isAntiAlias = true;
+
+      final dotPaint = Paint()
+        ..color = chart.graphColors[index % chart.graphColors.length]
+        ..style = PaintingStyle.fill;
 
       // Start the graph on the initial point
       var scaledPoint = scale * graph[0] * fraction;
       var path = Path();
 
-      if (reverseAxis) {
+      if (chart.reverseAxis) {
         path.moveTo(centerX, centerY - (radius * fraction - scaledPoint));
       } else {
         path.moveTo(centerX, centerY - scaledPoint);
       }
-
+      canvas.drawCircle(Offset(centerX, centerY - scaledPoint), chart.dotRadius, dotPaint);
       graph.asMap().forEach((index, point) {
         if (index == 0) return;
 
@@ -266,16 +237,14 @@ class RadarChartPainter extends CustomPainter {
         var yAngle = sin(angle * index - pi / 2);
         var scaledPoint = scale * point * fraction;
 
-        if (reverseAxis) {
-          path.lineTo(centerX + (radius * fraction - scaledPoint) * xAngle,
-              centerY + (radius * fraction - scaledPoint) * yAngle);
-        } else {
-          path.lineTo(centerX + scaledPoint * xAngle, centerY + scaledPoint * yAngle);
-        }
+        final destX = centerX + ((chart.reverseAxis) ? radius * fraction - scaledPoint : scaledPoint) * xAngle;
+        final destY = centerY + ((chart.reverseAxis) ? radius * fraction - scaledPoint : scaledPoint) * yAngle;
+        path.lineTo(destX, destY);
+        canvas.drawCircle(Offset(destX, destY), chart.dotRadius, dotPaint);
       });
 
       path.close();
-      if (fillPolygons) canvas.drawPath(path, graphPaint);
+      if (chart.fillPolygons) canvas.drawPath(path, graphPaint);
       canvas.drawPath(path, graphOutlinePaint);
     });
   }
