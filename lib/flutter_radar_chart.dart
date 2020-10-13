@@ -21,7 +21,9 @@ class RadarChart extends StatefulWidget {
   final TextStyle ticksTextStyle;
   final TextStyle featuresTextStyle;
   final Color outlineColor;
+  final double outlineWidth;
   final Color axisColor;
+  final double axisRadius;
   final List<Color> graphColors;
   final bool hasCircularBorder;
   final bool fillPolygons;
@@ -38,7 +40,9 @@ class RadarChart extends StatefulWidget {
     this.ticksTextStyle = const TextStyle(color: Colors.grey, fontSize: 12),
     this.featuresTextStyle = const TextStyle(color: Colors.black, fontSize: 16),
     this.outlineColor = Colors.black,
+    this.outlineWidth = 1.0,
     this.axisColor = Colors.grey,
+    this.axisRadius = 0.0,
     this.graphColors = defaultGraphColors,
     this.dotRadius = 5.0,
   }) : super(key: key);
@@ -139,7 +143,7 @@ class RadarChartPainter extends CustomPainter {
     var outlinePaint = Paint()
       ..color = chart.outlineColor
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.0
+      ..strokeWidth = chart.outlineWidth
       ..isAntiAlias = true;
 
     var ticksPaint = Paint()
@@ -186,7 +190,10 @@ class RadarChartPainter extends CustomPainter {
       var xAngle = cos(angle * index - pi / 2);
       var yAngle = sin(angle * index - pi / 2);
 
-      var featureOffset = Offset(centerX + radius * xAngle, centerY + radius * yAngle);
+      var featureOffset = Offset(
+        centerX + (radius + chart.axisRadius.abs()) * xAngle,
+        centerY + (radius + chart.axisRadius.abs()) * yAngle,
+      );
 
       canvas.drawLine(centerOffset, featureOffset, ticksPaint);
 
@@ -248,7 +255,7 @@ class RadarChartPainter extends CustomPainter {
       canvas.drawPath(path, graphOutlinePaint);
     });
   }
-
+  
   @override
   bool shouldRepaint(RadarChartPainter oldDelegate) {
     return oldDelegate.fraction != fraction;
