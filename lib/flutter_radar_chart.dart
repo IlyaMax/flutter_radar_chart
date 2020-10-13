@@ -23,9 +23,11 @@ class RadarChart extends StatefulWidget {
   final Color outlineColor;
   final double outlineWidth;
   final Color axisColor;
+  final double axisRadius;
   final List<Color> graphColors;
   final bool hasCircularBorder;
   final bool fillPolygons;
+
 
   const RadarChart({
     Key key,
@@ -40,6 +42,7 @@ class RadarChart extends StatefulWidget {
     this.outlineColor = Colors.black,
     this.outlineWidth = 1.0,
     this.axisColor = Colors.grey,
+    this.axisRadius = 0.0,
     this.graphColors = defaultGraphColors,
   }) : super(key: key);
 
@@ -92,6 +95,7 @@ class _RadarChartState extends State<RadarChart> with SingleTickerProviderStateM
           widget.outlineColor,
           widget.outlineWidth,
           widget.axisColor,
+          widget.axisRadius,
           widget.graphColors,
           widget.hasCircularBorder,
           widget.fillPolygons,
@@ -116,6 +120,7 @@ class RadarChartPainter extends CustomPainter {
   final Color outlineColor;
   final double outlineBorder;
   final Color axisColor;
+  final double axisRadius;
   final List<Color> graphColors;
   final bool hasCircularBorder;
   final bool fillPolygons;
@@ -131,6 +136,7 @@ class RadarChartPainter extends CustomPainter {
     this.outlineColor,
     this.outlineBorder,
     this.axisColor,
+    this.axisRadius,
     this.graphColors,
     this.hasCircularBorder,
     this.fillPolygons,
@@ -170,7 +176,7 @@ class RadarChartPainter extends CustomPainter {
     final centerX = size.width / 2.0;
     final centerY = size.height / 2.0;
     final centerOffset = Offset(centerX, centerY);
-    final radius = math.min(centerX, centerY) * 0.8;
+    final radius = math.min(centerX, centerY) * .8;
     final scale = radius / ticks.last;
 
     // Painting the chart outline
@@ -224,8 +230,8 @@ class RadarChartPainter extends CustomPainter {
       var xAngle = cos(angle * index - pi / 2);
       var yAngle = sin(angle * index - pi / 2);
 
-
-      var featureOffset = Offset(centerX + radius * xAngle, centerY + radius * yAngle);
+      var featureOffset = Offset(centerX + (radius + axisRadius.abs()) * xAngle, centerY + (radius + axisRadius.abs()) *
+          yAngle);
 
       canvas.drawLine(centerOffset, featureOffset, ticksPaint);
 
