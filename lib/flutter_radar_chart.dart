@@ -21,6 +21,7 @@ class RadarChart extends StatefulWidget {
   final TextStyle ticksTextStyle;
   final TextStyle featuresTextStyle;
   final Color outlineColor;
+  final double outlineWidth;
   final Color axisColor;
   final List<Color> graphColors;
   final bool hasCircularBorder;
@@ -37,6 +38,7 @@ class RadarChart extends StatefulWidget {
     this.ticksTextStyle = const TextStyle(color: Colors.grey, fontSize: 12),
     this.featuresTextStyle = const TextStyle(color: Colors.black, fontSize: 16),
     this.outlineColor = Colors.black,
+    this.outlineWidth = 1.0,
     this.axisColor = Colors.grey,
     this.graphColors = defaultGraphColors,
   }) : super(key: key);
@@ -88,6 +90,7 @@ class _RadarChartState extends State<RadarChart> with SingleTickerProviderStateM
           widget.ticksTextStyle,
           widget.featuresTextStyle,
           widget.outlineColor,
+          widget.outlineWidth,
           widget.axisColor,
           widget.graphColors,
           widget.hasCircularBorder,
@@ -111,6 +114,7 @@ class RadarChartPainter extends CustomPainter {
   final TextStyle ticksTextStyle;
   final TextStyle featuresTextStyle;
   final Color outlineColor;
+  final double outlineBorder;
   final Color axisColor;
   final List<Color> graphColors;
   final bool hasCircularBorder;
@@ -125,6 +129,7 @@ class RadarChartPainter extends CustomPainter {
     this.ticksTextStyle,
     this.featuresTextStyle,
     this.outlineColor,
+    this.outlineBorder,
     this.axisColor,
     this.graphColors,
     this.hasCircularBorder,
@@ -172,7 +177,7 @@ class RadarChartPainter extends CustomPainter {
     var outlinePaint = Paint()
       ..color = outlineColor
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.0
+      ..strokeWidth = outlineBorder
       ..isAntiAlias = true;
 
     var ticksPaint = Paint()
@@ -218,6 +223,7 @@ class RadarChartPainter extends CustomPainter {
     features.asMap().forEach((index, feature) {
       var xAngle = cos(angle * index - pi / 2);
       var yAngle = sin(angle * index - pi / 2);
+
 
       var featureOffset = Offset(centerX + radius * xAngle, centerY + radius * yAngle);
 
