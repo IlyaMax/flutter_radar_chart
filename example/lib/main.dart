@@ -27,6 +27,7 @@ class _MyHomePageState extends State<MyHomePage> {
   bool fillPolygons = false;
   bool hasCircularBorder = false;
   double numberOfFeatures = 3;
+  double axisRadius = 20.0;
 
   List<int> shuffledData() {
     final data = [15, 1, 4, 14, 23, 10, 6, 19];
@@ -126,6 +127,7 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
           Expanded(
             child: RadarChart(
+              axisRadius: axisRadius,
               ticks: ticks,
               features: features,
               data: data,
