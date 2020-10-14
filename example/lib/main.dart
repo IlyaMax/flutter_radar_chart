@@ -25,8 +25,8 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   bool fillPolygons = false;
-  bool hasCircularBorder = false;
-  double numberOfFeatures = 3;
+  bool hasCircularBorder = true;
+  double numberOfFeatures = 6;
   double axisRadius = 20.0;
 
   List<int> shuffledData() {
@@ -38,10 +38,10 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
     const ticks = [7, 14, 21, 28, 35];
-    var features = ["AA", "BB", "CC", "DD", "EE", "FF", "GG", "HH"];
+    var features = ["AAA", "BBB", "CCC", "DDD", "EEE", "FFF", "GGG", "HHH"];
     var data = [
       [10, 20, 28, 5, 16, 15, 17, 6],
-      [15, 1, 4, 14, 23, 10, 6, 19],
+      [15, 3, 4, 14, 23, 10, 6, 19],
       shuffledData(),
     ];
 
